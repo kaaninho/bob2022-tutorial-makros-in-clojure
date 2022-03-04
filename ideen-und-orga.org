@@ -1,0 +1,56 @@
+* Live-Umgebung
+
+https://www.tutorialspoint.com/execute_clojure_online.php
+
+* Erstes Probieren mit Quote und Eval
+
+#+begin_src clojure
+(let [code '(+ 3 (* 2 3))]
+  (println "Result of " code " is: " (eval code)))
+#+end_src
+
+
+* Idee: Testumgebung selbst bauen
+
+Schreibt selbst ein Makro, das den Parameter unausgewertet und ausgewertet printet.
+
+#+begin_src clojure
+(println ~(str "Unevaluated: " a))
+(println "Unevaluated: " '~a)
+(println "Evaluated: " ~a)
+#+end_src
+
+Weiter zu
+
+#+begin_src clojure
+
+(defmacro testi [a b]
+  `(do
+
+     (if (= ~a ~b)
+       (println "Test passed")
+       (println "Test not passed, " '~a " = "  ~a " not the same as " '~b " = " ~b)
+     )))
+
+(testi (+ 1 2) 4)
+
+
+(testi (reverse [1 2 3]) (list 3 4 2 1))
+
+#+end_src
+
+
+* Vorbereitung für Teilnehmer:innen
+
+Nichts zwingend notwendig. Wer mitmachen will am eigenen Rechner, kann
+
+- live im Browser mit einer entwickeln unter
+  https://www.tutorialspoint.com/execute_clojure_online.php oder
+- sich Clojure installieren
+  https://clojure.org/guides/getting_started und dann mit beliebigem
+  Texteditor und Terminal arbeiten oder
+- eine ganze Entwicklungsumgebung benutzen:
+  - Cursive: https://cursive-ide.com/
+  - Emacs + clojure-mode + CIDER: https://www.gnu.org/software/emacs/
+
+
