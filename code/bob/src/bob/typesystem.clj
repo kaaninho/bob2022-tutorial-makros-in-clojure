@@ -144,14 +144,21 @@
 
 
 
+#_(defun foo (Number )
+  [x]
+  x)
 
+#_(defun foo (Number Number)
+  [x]
+  x)
 
+#_(defun foo (Number ->)
+  [x]
+    x)
 
-
-
-
-
-
+#_(defun foo ( -> Number)
+  [x]
+  x)
 
 #_(defun foo (Number -> Number)
   [x]
@@ -165,6 +172,8 @@
   [x]
   (+ x 3))
 
+#_(add-fn-type + (Number Number -> Number))
+
 
 #_(defmacro remove-type [sym]
   (swap! *type-map* (fn [m] (dissoc m sym))))
@@ -175,26 +184,7 @@
 
 
 
-#_(add-fn-type + (Number Number -> Number))
 
-
-
-
-
-#_(defun add-1 (String -> Int)
-  [x]
-  (inc x))
-
-#_(defun make-list (Int -> [Int])
-  [x]
-  x)
-
-
-
-
-
-
-#_(add-fn-type inc (Int -> Int))
 
 
 
