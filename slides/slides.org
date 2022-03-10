@@ -1,0 +1,962 @@
+#+title: Makros in Clojure
+#+author: Kaan Sahin, Active Group GmbH
+#+REVEAL_PLUGINS: (notes)
+#+REVEAL_THEME: active
+#+REVEAL_ROOT: file:///home/kaan/tmp/reveal.js
+#+REVEAL_HLEVEL: 100
+#+REVEAL_TRANS: none
+#+OPTIONS: num:nil toc:nil reveal-center:f reveal_slide_number:t reveal_title_slide:nil
+#+MACRO: newline   src_emacs-lisp[:results raw]{"\n "}
+#+MACRO: TIKZ-IMG #+HEADER: :exports results :file $1 :imagemagick yes {{{newline}}} #+HEADER: :results raw {{{newline}}} #+HEADER: :headers '("\usepackage{tikz}") {{{newline}}} #+HEADER: :fit yes :imoutoptions -geometry $2 :iminoptions -density 600
+
+* Makros in Clojure
+
+#+HTML: <div><div style="max-width:400px;padding-left:130px">
+[[file:images/drawing-hands.jpg]]
+
+#+HTML: </div><div>
+/If you give someone Fortran, he has Fortran./
+/If you give someone Lisp, he has any language he pleases./  —Guy L. Steele
+#+HTML: </div></div>
+* Motivation
+
+\\
+
+/"Sandra sagt, sie benutzt gerne Python, da ihr in anderen Sprachen die/
+/List-Comprehensions fehlen. Simon findet C# toll, wegen async./
+
+/Wir sagen: Benutz doch einfach Clojure und schreib Makros, dann kannst Du diese/
+/Features einfach als Libraries importieren!"/
+
+
+* Motivation --- List Comprehensions
+
+Python
+
+#+begin_src python
+[x * x for x in range(20) if x % 2 == 0]
+#+end_src
+
+\\ 
+
+Haskell
+
+#+begin_src haskell
+[x * x | x <- [1, 2, 3, 4], x > 2]
+#+end_src
+
+* Motivation --- Pattern Matching
+
+Elixir
+
+#+begin_src elixir
+  def fun(["Hi", name]), do: "What's up, " <> name <> "?"
+  def fun(lis), do: "something else"
+
+case {1, 2, 3} do
+  {1, 2, 4} -> "this won't match"
+  {1, 2, x} -> x
+  _         -> "if nothing else matches"
+end
+#+end_src
+
+* Motivation
+
+Weitere Schreiberleichterung: 
+
+- Getter-/Setter-Funktionen
+- Wiederkehrende Definitionen / Umständlichkeiten
+
+Spracherweiterung via Libraries:
+
+- Concurrency-System
+- DSLs
+- Statisches Typsystem
+- . . .
+
+* Clojure --- Übersicht
+
+- Lisp-Dialekt
+- kompiliert zu JVM-Bytecode
+- Interop mit Java
+- ermutigt funktionale Programmierung
+- unveränderbare Datenstrukturen
+- besonderes Augenmerk auf Nebenläufigkeit
+
+#+BEGIN_NOTES
+- JVM: etablierte, anerkannte Umgebung
+- funktional: immutable data & first-class functions
+- Weil Lisp-Dialekt: Programmcode ist dem AST ähnlich
+#+END_NOTES
+
+* Clojure --- (Lisp-)Syntax
+
+- Zwei Arten von Ausdrücken:
+  - Atomare Ausdrücke: =17=, ="Hallo"=, =sym=, =false=
+  - Listen: =(or false (> 2 1))=
+
+#+BEGIN_NOTES
+- Ausdrücke werden evaluiert / ausgewertet zu Werten
+- Ein Ausdruck mit Klammern ist meistens ein Funktionsaufruf
+- Heute wird es aber oft was anderes sein, ein Makro oder eine special form
+- In Clojure gibt es noch drei weitere Arten von collection types: Vektoren,
+  Maps und Mengen
+#+END_NOTES
+
+* Clojure --- Syntax
+
+- Zwei Arten von Ausdrücken:
+  - Atomare Ausdrücke: =17=, ="Hallo"=, =sym=, =false=
+  - Listen: =(or false (> 2 1))=
+
+\\
+
+zudem noch: 
+- Keywords: =:color=
+- Vektoren: =[1 2]=, 
+- Maps: ={:a 1 :b 5}= und
+- Mengen: =#{5, 7}=
+#+BEGIN_NOTES
+- Ausdrücke werden evaluiert / ausgewertet zu Werten
+- Ein Ausdruck mit Klammern ist meistens ein Funktionsaufruf
+- Heute wird es aber oft was anderes sein, ein Makro oder eine special form
+- In Clojure gibt es noch drei weitere Arten von collection types: Vektoren,
+  Maps und Mengen
+#+END_NOTES
+
+* Clojure --- Syntax
+
+#+begin_src clojure
+3                                        ;; Integer
+
+"String"                                 ;; String
+
+sym                                      ;; Symbol
+
+true                                     ;; Boolean
+
+(* (+ 4 3) 2)                            ;; Integer (nach Funktionsaufruf)
+
+(list 1 2 3 "Hallo" (+ 1 2))             ;; Liste
+
+(if (> 2 3) "It is true" 100)            ;; Integer (nach Funktionsaufruf)
+
+(cond
+  (> 3 4) "Ich bin nicht das Ergebnis"
+  (= 3 3) "Ich bin das Ergebnis"
+  (> 3 2) "Ich bin nicht das Ergebnis")  ;; String
+#+end_src
+
+* Clojure --- Syntax, Definitionen
+
+#+begin_src clojure
+(def pi 3.14159)
+#+end_src
+
+* Clojure --- Syntax, Definitionen
+
+#+begin_src clojure
+(def pi 3.14159)
+
+(defn add1
+  [x]
+  (+ 1 x))
+#+end_src
+
+* Clojure --- Syntax, Definitionen
+
+#+begin_src clojure
+(def pi 3.14159)
+
+(defn add1
+  [x]
+  (+ 1 x))
+
+(defn factorial
+  [n]
+  (if (= n 1)
+    1
+    (* n (factorial (dec n)))))
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+5
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+5
+
+repl> "Hallo"
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+5
+
+repl> "Hallo"
+"Hallo"
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+5
+
+repl> "Hallo"
+"Hallo"
+
+repl> (def pi 3.14)
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+5
+
+repl> "Hallo"
+"Hallo"
+
+repl> (def pi 3.14)
+repl>
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+5
+
+repl> "Hallo"
+"Hallo"
+
+repl> (def pi 3.14)
+repl> pi
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> 5
+5
+
+repl> "Hallo"
+"Hallo"
+
+repl> (def pi 3.14)
+repl> pi
+3.14
+#+end_src
+
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> (defn foo [x y] (+ x y))
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> (defn foo [x y] (+ x y))
+repl>
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> (defn foo [x y] (+ x y))
+repl> (foo 3 4)
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> (defn foo [x y] (+ x y))
+repl> (foo 3 4)
+7
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> (defn foo [x y] (+ x y))
+repl> (foo 3 4)
+7
+
+repl> (foo (+ 2 1) (+ 2 2))
+#+end_src
+
+* Clojure --- Evaluation
+
+#+begin_src clojure
+repl> (defn foo [x y] (+ x y))
+repl> (foo 3 4)
+7
+
+repl> (foo (+ 2 1) (+ 2 2))
+7
+#+end_src
+
+* Clojure --- Evaluationsschritte
+
+#+begin_src clojure
+(foo (+ 2 1) (+ 2 2))
+#+end_src
+
+* Clojure --- Evaluationsschritte
+
+#+begin_src clojure
+(foo (+ 2 1) (+ 2 2))
+
+↝ (foo 3 (+ 2 2))
+#+end_src
+
+* Clojure --- Evaluationsschritte
+
+#+begin_src clojure
+(foo (+ 2 1) (+ 2 2))
+
+↝ (foo 3 (+ 2 2))
+
+↝ (foo 3 4)
+#+end_src
+
+* Clojure --- Evaluationsschritte
+
+#+begin_src clojure
+(foo (+ 2 1) (+ 2 2))
+
+↝ (foo 3 (+ 2 2))
+
+↝ (foo 3 4)
+
+↝ (+ 3 4)
+#+end_src
+
+* Clojure --- Evaluationsschritte
+
+#+begin_src clojure
+(foo (+ 2 1) (+ 2 2))
+
+↝ (foo 3 (+ 2 2))
+
+↝ (foo 3 4)
+
+↝ (+ 3 4)
+
+↝ 7
+#+end_src
+
+* Clojure --- REPL
+
+*R* EAD
+ 
+*E* VAL
+
+*P* RINT
+
+*L* OOP
+
+* Clojure --- REPL
+
+\\
+
+Live-Coding
+
+
+* Kompilation --- Read und Eval
+
+\\
+
+#+attr_html: :width 800px
+[[file:images/read-eval.svg]]
+
+\\
+\\
+
+Der Clojure-Reader liest Text und gibt Datenstrukturen ("forms") zurück.
+
+Der Evaluator nimmt Datenstrukturen ("forms") und evaluiert sie zu Werten.
+
+* Kompilation --- Read und Eval
+
+\\
+
+Live-Coding
+
+* Kompilation --- Read und Eval
+
+\\
+
+#+attr_html: :width 800px
+[[file:images/read-eval.svg]]
+
+\\
+\\
+
+Der Clojure-Reader liest Text und gibt Datenstrukturen ("forms") zurück.
+
+Der Evaluator nimmt Datenstrukturen ("forms") und evaluiert sie zu Werten.
+
+* Kompilation --- Read, Eval und Makroexpansion!
+
+\\
+
+#+attr_html: :width 900px
+[[file:images/read-macro-eval.svg]]
+
+* Kompilation --- Read, Eval und Makroexpansion!
+
+\\
+
+#+attr_html: :width 900px
+[[file:images/read-macro-eval.svg]]
+
+\\
+\\
+
+In der Makroexpansion werden Makroaufrufe getätigt.
+
+#+begin_notes
+Weil ja READ Datenstrukturen liefert und EVAL Datenstrukturen entgegennimmt,
+muss folgen, dass Makros Datenstrukturen konsumieren und zurückgeben
+#+end_notes
+
+* Kompilation --- Read, Eval und Makroexpansion!
+
+\\
+
+#+attr_html: :width 900px
+file:images/read-macro-eval.svg
+
+\\
+\\
+
+Makros nehmen Datenstrukturen ("forms") entgegen und geben Datenstrukturen
+("forms") zurück.
+
+
+* Makros
+
+\\
+\\
+
+Makros nehmen Datenstrukturen ("forms") entgegen und geben Datenstrukturen
+("forms") zurück.
+
+
+* Makros
+
+\\
+\\
+
+Makros nehmen Datenstrukturen ("forms") entgegen und *geben Datenstrukturen
+("forms") zurück.*
+
+\\
+
+* Makros --- Infix
+
+Statt 
+
+#+begin_src clojure
+(+ 2 1)
+#+end_src
+
+wollen wir
+
+#+begin_src clojure
+(2 + 1)
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  ...)
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list ...))
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list ... ... ...))
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list (second form) ... ...))
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list (second form) (first form) ...))
+#+end_src
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list (second form) (first form) (third form)))
+#+end_src
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list (second form) (first form) (third form)))
+
+repl> (calc-infix (2 + 1))
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list (second form) (first form) (third form)))
+
+repl> (calc-infix (2 + 1))
+
+READER
+Datenstruktur: (calc-infix (2 + 1))
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list (second form) (first form) (third form)))
+
+repl> (calc-infix (2 + 1))
+
+READER
+Datenstruktur: (calc-infix (2 + 1))
+
+MAKROEXPANSION
+↝ (list (second (2 + 1)) (first (2 + 1)) (third (2 + 1)))
+↝ (list + 2 1)
+↝ (+ 2 1) [Datenstruktur!]
+#+end_src
+
+* Makros --- Infix
+
+#+begin_src clojure
+(defmacro calc-infix
+  [form]
+  (list (second form) (first form) (third form)))
+
+repl> (calc-infix (2 + 1))
+
+READER
+Datenstruktur: (calc-infix (2 + 1))
+
+MAKROEXPANSION
+↝ (list (second (2 + 1)) (first (2 + 1)) (third (2 + 1)))
+↝ (list + 2 1)
+↝ (+ 2 1) [Datenstruktur!]
+
+EVAL
+(+ 2 1)
+↝ 3
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Wollen die *form* =(+ (* 2 3) 4)= erstellen.
+
+* Makros --- Quote und Unquote
+
+Wollen die *form* =(+ (* 2 3) 4)= erstellen.
+
+Umständlich und unleserlich:
+
+#+begin_src clojure
+(list + (list * 2 3) 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Wollen die *form* =(+ (* 2 3) 4)= erstellen.
+
+Umständlich und unleserlich:
+
+#+begin_src clojure
+(list + (list * 2 3) 4)
+↝ (+ (* 2 3) 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Wollen die *form* =(+ (* 2 3) 4)= erstellen.
+
+Umständlich und unleserlich:
+
+#+begin_src clojure
+(list + (list * 2 3) 4)
+#+end_src
+
+\\
+
+Besser:
+
+#+begin_src clojure
+`(+ (* 2 3) 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Jedoch
+
+#+begin_src clojure
+(list + (* 2 3) 4)
+↝ (+ 6 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Jedoch
+
+#+begin_src clojure
+(list + (* 2 3) 4)
+↝ (+ 6 4)
+#+end_src
+
+\\
+
+Aber
+
+#+begin_src clojure
+`(+ (* 2 3) 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Jedoch
+
+#+begin_src clojure
+(list + (* 2 3) 4)
+↝ (+ 6 4)
+#+end_src
+
+\\
+
+Aber
+
+#+begin_src clojure
+`(+ (* 2 3) 4)
+↝ (+ (* 2 3) 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Abhilfe
+
+#+begin_src clojure
+`(+ (* 2 3) 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Abhilfe
+
+#+begin_src clojure
+`(+ ~(* 2 3) 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+Abhilfe
+
+#+begin_src clojure
+`(+ ~(* 2 3) 4)
+↝ (+ 6 4)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+#+begin_src clojure
+(def my-var 100)
+
+`(1 2 3 my-var)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+#+begin_src clojure
+(def my-var 100)
+
+`(1 2 3 my-var)
+↝ (1 2 3 my-var)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+#+begin_src clojure
+(def my-var 100)
+
+`(1 2 3 my-var)
+↝ (1 2 3 my-var)
+
+`(1 2 3 ~my-var)
+#+end_src
+
+* Makros --- Quote und Unquote
+
+#+begin_src clojure
+(def my-var 100)
+
+`(1 2 3 my-var)
+↝ (1 2 3 my-var)
+
+`(1 2 3 ~my-var)
+↝ (1 2 3 100)
+#+end_src
+
+* Method Timing
+
+Java?
+
+* Method Timing
+
+Java?
+
+https://stackoverflow.com/questions/180158/how-do-i-time-a-methods-execution-in-java
+* Method Timing
+
+Java?
+
+https://stackoverflow.com/questions/180158/how-do-i-time-a-methods-execution-in-java
+
+#+begin_src java
+long startTime = System.currentTimeMillis();
+
+doReallyLongThing();
+
+long endTime = System.currentTimeMillis();
+
+System.out.println("Needed " + (endTime - startTime) + " ms.");
+#+end_src
+
+* Method Timing
+
+Clojure?
+
+* Method Timing
+
+Clojure?
+
+#+begin_src clojure
+(let [before (System/currentTimeMillis)
+      result (do-something)
+      after  (System/currentTimeMillis)]
+  (println "Needed " (- after before) " ms."))
+#+end_src
+
+* Method Timing
+
+Clojure?
+
+#+begin_src clojure
+(let [before (System/currentTimeMillis)
+      result (do-something)
+      after  (System/currentTimeMillis)]
+  (println "Needed " (- after before) " ms."))
+#+end_src
+
+\\
+
+Zu viel Handarbeit!
+
+* Method Timing
+
+Wollen nur schreiben:
+
+#+begin_src clojure
+(timing (do-something))
+#+end_src
+
+* Method Timing
+
+\\
+
+#+begin_src clojure
+(defmacro timing [form]
+  ...)
+#+end_src
+
+
+* Method Timing
+
+\\
+
+Live-Coding
+
+#+begin_notes clojure
+- Benutze =C-c M-p= (insert-last-sexpr in REPL)
+#+end_notes
+
+* String switch
+
+https://docs.oracle.com/javase/8/docs/technotes/guides/language/strings-switch.html
+
+/" In the JDK 7 release, you can use a String object in the expression of a/
+/switch statement: "/
+
+#+begin_src java
+public String getTypeOfDayWithSwitchStatement(String dayOfWeekArg) {
+     String typeOfDay;
+     switch (dayOfWeekArg) {
+         case "Monday":
+             typeOfDay = "Start of work week";
+             break;
+         case "Tuesday":
+         case "Wednesday":
+         case "Thursday":
+             typeOfDay = "Midweek";
+             break;
+      ...
+#+end_src
+
+#+begin_notes
+Release war: 2011-07-11	
+#+end_notes
+
+* String switch
+
+Wollen folgende Syntax implementieren
+
+#+begin_src clojure
+(def y "Work")
+
+(switch y
+        case "Holiday" -> "I am not around"
+        case "Work"    -> "How can I help?")
+#+end_src
+
+* String switch
+
+\\
+
+#+begin_src clojure
+(switch y
+        case "Holiday" -> "I am not around"
+        case "Work"    -> "How can I help?")
+
+↝ [MAKROEXPANSION]
+
+(cond
+  (= y "Holiday") "I am not around"
+  (= y "Work") "How can I help?")
+#+end_src
+
+
+* vorhandene Typsysteme
+
+=prismatic/schema=
+
+#+begin_src clojure
+(s/defn foo :- s/Num
+  [x :- s/Int
+   y :- s/Num]
+  (* x y))
+#+end_src
+
+#+BEGIN_NOTES
+- Es gibt schon Libraries für Typsysteme, die bekanntesten sind Typed Clojure,
+  Clojure Spec und Schema. Sie haben alle drei ein etwas anderes
+  Anwendungsgebiet:
+  - spec und schema: runtime check, ähnlich zu Contracts
+
+#+END_NOTES
+
+* vorhandene Typsysteme
+
+=clojure.spec=
+
+#+begin_src clojure
+(s/fdef foo
+  :args (s/and (s/cat :x int? :y int?)
+               #(> (:x %) 0)
+  :ret int?)
+
+(defn foo
+  [x y]
+  (* x y))
+#+end_src
+
+\\
+
+und Typed Clojure
+
+#+begin_notes
+- Typed Clojure: Static Type analysis (zur Compile-Zeit)
+#+end_notes
+
+* Makro-Pitfalls -- Makro-Hygiene
+* Makro-Pitfalls -- Makro-Hygiene
+
+** Accidental Variable Capture
+
+
+
+* DSLs
+
+Beispiel: Datenbankspezifische Sprache
+
+#+begin_src clojure
+(do-db put 1 {:name "Kaan" :abc 5}
+       put 2 {:name "Johannes" :abc 7}
+       get-all where :abc > 5)
+
+
+↝ {2 {:name "Johannes" :abc 7}} 
+#+end_src
+
+* Noch mehr Interesse!?
+
+\\
+
+- Slides und Code zu diesem Tutorial auf https://github.com/kaaninho/bob2022-tutorial-makros-in-clojure
+
+\\
+
+- Blogpostreihe "Makros in Clojure" auf https://funktionale-programmierung.de
+
+\\
+
+
+
