@@ -44,9 +44,9 @@ Weiter zu
 
 Nichts zwingend notwendig. Wer mitmachen will am eigenen Rechner, kann
 
-- live im Browser mit einer entwickeln unter
+- live im Browser entwickeln unter
   https://www.tutorialspoint.com/execute_clojure_online.php oder
-- sich Clojure installieren
+- Clojure installieren
   https://clojure.org/guides/getting_started und dann mit beliebigem
   Texteditor und Terminal arbeiten oder
 - eine ganze Entwicklungsumgebung benutzen:
