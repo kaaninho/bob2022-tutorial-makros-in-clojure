@@ -50,8 +50,8 @@ Haskell
 Elixir
 
 #+begin_src elixir
-  def fun(["Hi", name]), do: "What's up, " <> name <> "?"
-  def fun(lis), do: "something else"
+def fun(["Hi", name]), do: "What's up, " <> name <> "?"
+def fun(lis), do: "something else"
 
 case {1, 2, 3} do
   {1, 2, 4} -> "this won't match"
